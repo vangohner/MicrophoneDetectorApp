@@ -16,11 +16,15 @@
 #include <esp_pm.h>
 #include <esp_wifi.h>
 #include <esp_bt.h>
+#include <FastLED.h>  // Include FastLED library
+#define NUM_LEDS 8    // Number of LEDs in the chain
+#define DATA_PIN 23    // Data pin for LED control
+
+CRGB leds[NUM_LEDS];  // Array to hold LED color data
+CRGB ledColor = CRGB::Red;
 
 BLEService ledService("19B10000-E8F2-537E-4F6C-D104768A1214");
 BLEByteCharacteristic switchCharacteristic("19B10001-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite);
-
-const int ledPin = 23;
 
 // Power management variables
 unsigned long lastActivityTime = 0;
@@ -70,9 +74,12 @@ void setup() {
   // Configure power management early
   configurePowerManagement();
   
-  // Set LED pin to output mode
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
+  FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);  // Initialize LEDs
+  // Loop through each LED and turn it off
+  for (int dot = 0; dot < NUM_LEDS; dot++) {
+    leds[dot] = CRGB::Black;   // Set the current LED to blue
+  }
+  FastLED.show();           // Update LEDs
   
   // Begin BLE initialization
   if (!BLE.begin()) {
@@ -112,7 +119,11 @@ void enterDeepSleep() {
   Serial.flush(); // Ensure message is sent
   
   // Turn off LED before sleep
-  digitalWrite(ledPin, LOW);
+  // Loop through each LED and turn it off
+  for (int dot = 0; dot < NUM_LEDS; dot++) {
+    leds[dot] = CRGB::Black;   // Set the current LED to blue
+  }
+  FastLED.show();           // Update LEDs
   
   // Stop BLE advertising
   BLE.stopAdvertise();
@@ -142,10 +153,18 @@ void handleLEDControl() {
       
       if (ledState) {
         Serial.println("LED on");
-        digitalWrite(ledPin, HIGH);
+        // Loop through each LED and turn it on
+        for (int dot = 0; dot < NUM_LEDS; dot++) {
+          leds[dot] = ledColor;   // Set the current LED to blue
+        }
+        FastLED.show();           // Update LEDs
       } else {
         Serial.println("LED off");
-        digitalWrite(ledPin, LOW);
+        // Loop through each LED and turn it off
+        for (int dot = 0; dot < NUM_LEDS; dot++) {
+          leds[dot] = CRGB::Black;   // Set the current LED to blue
+        }
+        FastLED.show();           // Update LEDs
       }
     }
   }
@@ -200,7 +219,11 @@ void loop() {
     lastConnectionTime = millis();
     
     // Turn off LED when disconnected to save power
-    digitalWrite(ledPin, LOW);
+    // Loop through each LED and turn it off
+    for (int dot = 0; dot < NUM_LEDS; dot++) {
+      leds[dot] = CRGB::Black;   // Set the current LED to blue
+    }
+    FastLED.show();           // Update LEDs
     ledState = false;
     switchCharacteristic.writeValue(0);
   }
